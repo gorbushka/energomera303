@@ -65,11 +65,7 @@ class Counter:
     # Init flag
     _init = ''
 
-    def __init__(self, host, port, address, timeout=5, debug=False):
-        bitaddress=[]
-        for ch in address:
-             bitaddress.append(ord(ch))
-        self.address=list(bytearray(bitaddress))
+    def __init__(self, host, port, timeout=5, debug=False):
         self.Z = 5
         #self.address = list(bytearray(b'%d'%address)) if address else []
         self.port = port
@@ -129,7 +125,6 @@ class Counter:
         return self._CMD_CLOSE + self.get_lrc(self._CMD_CLOSE)
 
     def readSocket(self, incmd, getflag=0):
-        print incmd
         #print getflag
         _encoded_cmd = ''
         _encoded = []
@@ -161,15 +156,15 @@ class Counter:
                     if getflag==1:
                         if len(_buffer)>11 and _buffer[-2:] == str(bytearray(self._EOL)):
                             break
-                            #a=1 
                     else:
                         if len(_buffer)>2:
                             if (bytearray(_cmd)==bytearray(self.getCmdWriteMode()) and _buffer[-2:-1] == str(bytearray(self._ETX))):
                                 break
                             if _buffer[-4:-1] == str(bytearray(self._EOL+self._ETX)):
                                 break
-                                #a=1
-                            
+                            if (bytearray(_cmd)==bytearray(self.close()) and _buffer[-2:-1] == str(bytearray(self._ETX))):    
+                                break
+                                self.socket.close()
  
         except Exception, error:
             print 'Read data', error
@@ -202,6 +197,10 @@ class Counter:
 
     # Init connection
     def init(self, address=True):
+        bitaddress=[]
+        for ch in address:
+             bitaddress.append(ord(ch))
+        self.address=list(bytearray(bitaddress))
         if address:
             init = self.readSocket(self._CMD_INIT + self.address + self._CMD_POST_INIT + self._EOL,1)
         else:
@@ -220,12 +219,14 @@ class Counter:
         #cmd_close = self.close()
         #print cmd_close, pretty_hex(cmd_close)
         #res2 = self.readSocket(self.getCmdQuickReadMode()) # quick read
-        self.init()
+        #self.init()
         #res2 = self.readSocket(self.getCmdModReadMode()) # read
         res2 = self.readSocket(self.getCmdWriteMode()) # write
-        res2 = self.readSocket(self.getTest()) # read
+        #res2 = self.readSocket(self.getTest()) # read
         return res2
-
+    def get_close(self):
+        res = self.readSocket(self.close())
+        return res
     # Parse value from answer (xx.xx)
     def getValue(self, answer):
         try:
