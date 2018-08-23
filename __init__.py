@@ -129,7 +129,7 @@ class Counter:
         return self._CMD_CLOSE + self.get_lrc(self._CMD_CLOSE)
 
     def readSocket(self, incmd, getflag=0):
-        #print cmd
+        print incmd
         #print getflag
         _encoded_cmd = ''
         _encoded = []
@@ -241,12 +241,11 @@ class Counter:
 
     # Command mode
     def cmd(self, incmd):
-        _cmd = self._CMD_SOHR
+        _cmd = [0x01, 0x52, 0x31, 0x02]  # SOH R 1 STX
         for ch in incmd:
             _cmd.append(ord(ch))
         _cmd += self._ETX
         _cmd += self.get_lrc(_cmd)
-        #_cmd += self._EOL
         answer = self.readSocket(_cmd)
         res = self.getValue(answer)
 #         pprint(res)
