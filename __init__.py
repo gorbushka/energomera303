@@ -128,14 +128,14 @@ class Counter:
     def close(self):
         return self._CMD_CLOSE + self.get_lrc(self._CMD_CLOSE)
 
-    def readSocket(self, cmd, getflag=0):
+    def readSocket(self, incmd, getflag=0):
         #print cmd
         #print getflag
         _encoded_cmd = ''
         _encoded = []
         _cmd = ''
         _response = []
-        for bit in cmd:
+        for bit in incmd:
             _encoded.append(self.encode(bit))
             _cmd += chr(int(bit))
 
@@ -143,7 +143,7 @@ class Counter:
             _encoded_cmd += chr(int(bit))
 
         if self.debug:
-            print '>> request', pretty_hex(cmd), _cmd
+            print '>> request', pretty_hex(incmd), _cmd
             print '>> encoded7', pretty_hex(_encoded), _encoded_cmd
 
         self.socket.sendall(_encoded_cmd)
@@ -157,14 +157,14 @@ class Counter:
                 if _data:
                     _decoded_data = self.decode(_data)
                     _buffer += _decoded_data
-                    print _cmd, len(_buffer), _buffer[-2:-1],pretty_hex(_buffer), str(bytearray(self._EOL))
+                    #print _cmd, len(_buffer), _buffer[-2:-1],pretty_hex(_buffer), str(bytearray(self._EOL))
                     if getflag==1:
                         if len(_buffer)>11 and _buffer[-2:] == str(bytearray(self._EOL)):
                             break
                             #a=1 
                     else:
                         if len(_buffer)>2:
-                            if (_cmd==self.getCmdWriteMode() and _buffer[-2:-1] == str(bytearray(self._ETX))):
+                            if (bytearray(_cmd)==bytearray(self.getCmdWriteMode()) and _buffer[-2:-1] == str(bytearray(self._ETX))):
                                 break
                             if _buffer[-4:-1] == str(bytearray(self._EOL+self._ETX)):
                                 break
@@ -228,7 +228,6 @@ class Counter:
 
     # Parse value from answer (xx.xx)
     def getValue(self, answer):
-        #print "raw:answer {}".format(answer)
         try:
             #value = map(float, re.findall('\((\d+.\d+)', answer))
             value = map(str, re.findall('\((\d+.\d+)', answer))
@@ -241,18 +240,18 @@ class Counter:
         return value
 
     # Command mode
-    def cmd(self, cmd):
+    def cmd(self, incmd):
         _cmd = self._CMD_SOHR
-        for ch in cmd:
+        for ch in incmd:
             _cmd.append(ord(ch))
-        _cmd += [0x03]
+        _cmd += self._ETX
         _cmd += self.get_lrc(_cmd)
         #_cmd += self._EOL
         answer = self.readSocket(_cmd)
         res = self.getValue(answer)
 #         pprint(res)
         return res
-
+    # out off session read
     def cmd_read(self, cmd):
         _cmd =  self._CMD_INIT 
         _cmd += self.address
@@ -260,7 +259,7 @@ class Counter:
         _cmd += self._CMD_SOHR # SOH R 1 STX
         for ch in cmd:
             _cmd.append(ord(ch))
-        _cmd += [0x03]
+        _cmd += self._ETX
         _cmd += self.get_lrc(_cmd)
         answer = self.readSocket(_cmd)
         res = self.getValue(answer)

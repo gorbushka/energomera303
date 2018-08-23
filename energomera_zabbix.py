@@ -16,7 +16,9 @@ ADDRESS = '000013'
 
 en = Counter(HOST, PORT, ADDRESS, TIMEOUT, True)
 en.get()
-result = en.cmd('IDENT()')
+result = en.cmd('VOLTA()')
+print result
+result = en.cmd('CURRE()')
 print result
 #en.get()
 #print result
