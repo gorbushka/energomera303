@@ -15,6 +15,7 @@ ADDRESS = str(counter_addr) #'000013'
 PARAM=str(param+'()') #'CURRE()'
 
 
-en = Counter(HOST, PORT, ADDRESS, TIMEOUT, True)
+en = Counter(HOST, PORT, TIMEOUT, True)
+en.init(ADDRESS)
 result = en.cmd_read(PARAM)
 print result

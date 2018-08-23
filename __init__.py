@@ -231,7 +231,8 @@ class Counter:
     def getValue(self, answer):
         try:
             #value = map(float, re.findall('\((\d+.\d+)', answer))
-            value = map(str, re.findall('\((\d+.\d+)', answer))
+            value = map(str, re.findall('\((-?\d+.\d+)', answer)) #work with positive
+            #value = map(str, re.findall('\((.*)\)', answer))
         except:
             value=answer  
         #value = map(float, re.findall('\((\d+.\d+)', answer))
