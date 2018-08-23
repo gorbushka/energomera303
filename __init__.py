@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # coding: utf-8
-
+#fork from https://github.com/sinyawskiy/energomera102m
+#https://github.com/velsi/rs485/blob/master/counter.py
+# Semikin@powernet
 import re
 import socket
 import time
@@ -46,7 +48,8 @@ class Counter:
     #Init string for Energomera's counter
     _CMD_INIT = [0x2F, 0x3F] # / ?
     _CMD_POST_INIT = [0x21] # !
-
+    _CMD_SOHR= [0x01, 0x52, 0x31, 0x02] # SOH R 1 STX
+    
     _CMD_CLOSE = [0x1, 0x42, 0x30, 0x3] # '\x01B0\x03'
 
     #End of line \r\n
@@ -67,7 +70,7 @@ class Counter:
         for ch in address:
              bitaddress.append(ord(ch))
         self.address=list(bytearray(bitaddress))
-        self.Z = ''
+        self.Z = 5
         #self.address = list(bytearray(b'%d'%address)) if address else []
         self.port = port
         self.host = host
@@ -77,7 +80,7 @@ class Counter:
         self.parity_lookup = [self.parallel_swar(i) for i in range(256)]
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        #self.init() #!!!!!!!!!!!!!!!!uncomment if using cmd()
+    
 
     # Needed for parity
     def parallel_swar(self, i):
@@ -104,18 +107,23 @@ class Counter:
 
     # Write-mode cmd
     def getCmdWriteMode(self):
-        return [0x06, 0x30, self.Z, 0x31] + self._EOL # ACK 0 Z 1 CR LF
+        return [0x06, 0x30, 0x35, 0x31] + self._EOL # ACK 0 Z 1 CR LF
 
     # Read-mode cmd
     def getCmdReadMode(self):
         return [0x06, 0x30, self.Z, 0x30] + self._EOL # ACK 0 Z 0 CR LF считывания данных
 
     def getCmdModReadMode(self):
-        return [0x06, 0x30, 0x5A, 0x30] + self._EOL # ACK 0 Z 0 CR LF считывания данных
+        return [0x06, 0x30, 0x35, 0x30] + self._EOL # ACK 0 Z 0 CR LF считывания данных
 
     # Quick-mode cmd (Energomera only ??)
     def getCmdQuickReadMode(self):
         return [0x06, 0x30, self.Z, 0x36] + self._EOL # ACK 0 Z 6 CR LF чтения фиксированного набора параметров
+
+    def getTest(self):
+        #              01 52 31 02 49 44 45 4E 54 28 29 03 4D
+        return [0x01, 0x52, 0x31, 0x02,0x49, 0x44, 0x45, 0x4E, 0x54, 0x28, 0x29, 0x03, 0x4D] # ACK 0 Z 6 CR LF чтения фиксированного набора параметров
+
 
     def close(self):
         return self._CMD_CLOSE + self.get_lrc(self._CMD_CLOSE)
@@ -136,7 +144,7 @@ class Counter:
 
         if self.debug:
             print '>> request', pretty_hex(cmd), _cmd
-            print '>> encoded', pretty_hex(_encoded), _encoded_cmd
+            print '>> encoded7', pretty_hex(_encoded), _encoded_cmd
 
         self.socket.sendall(_encoded_cmd)
         _data = ''
@@ -149,21 +157,27 @@ class Counter:
                 if _data:
                     _decoded_data = self.decode(_data)
                     _buffer += _decoded_data
+                    print _cmd, len(_buffer), _buffer[-2:-1],pretty_hex(_buffer), str(bytearray(self._EOL))
                     if getflag==1:
-                        if len(_buffer)>2 and _buffer[-2:] == str(bytearray(self._EOL)):
+                        if len(_buffer)>11 and _buffer[-2:] == str(bytearray(self._EOL)):
                             break
+                            #a=1 
                     else:
-                        if len(_buffer)>2 and _buffer[-3:] == str(bytearray(self._EOL+self._ETX)):
-                        #print 'next command'
-                            break
-
+                        if len(_buffer)>2:
+                            if (_cmd==self.getCmdWriteMode() and _buffer[-2:-1] == str(bytearray(self._ETX))):
+                                break
+                            if _buffer[-4:-1] == str(bytearray(self._EOL+self._ETX)):
+                                break
+                                #a=1
+                            
+ 
         except Exception, error:
             print 'Read data', error
 
         self.socket.settimeout(None)
 
         if self.debug:
-            print '<< response', pretty_hex(_buffer)
+            print '<< response', pretty_hex(_buffer),_buffer
         return _buffer
 
     def get_lrc(self, message_byte_array):
@@ -206,8 +220,10 @@ class Counter:
         #cmd_close = self.close()
         #print cmd_close, pretty_hex(cmd_close)
         #res2 = self.readSocket(self.getCmdQuickReadMode()) # quick read
-        res2 = self.readSocket(self.getCmdModReadMode()) # read
-        #self.init()
+        self.init()
+        #res2 = self.readSocket(self.getCmdModReadMode()) # read
+        res2 = self.readSocket(self.getCmdWriteMode()) # write
+        res2 = self.readSocket(self.getTest()) # read
         return res2
 
     # Parse value from answer (xx.xx)
@@ -226,7 +242,7 @@ class Counter:
 
     # Command mode
     def cmd(self, cmd):
-        _cmd = [0x01, 0x52, 0x31, 0x02] # SOH R 1 STH
+        _cmd = self._CMD_SOHR
         for ch in cmd:
             _cmd.append(ord(ch))
         _cmd += [0x03]
@@ -236,11 +252,12 @@ class Counter:
         res = self.getValue(answer)
 #         pprint(res)
         return res
+
     def cmd_read(self, cmd):
         _cmd =  self._CMD_INIT 
         _cmd += self.address
         _cmd += self._CMD_POST_INIT    
-        _cmd += [0x01, 0x52, 0x31, 0x02] # SOH R 1 STH
+        _cmd += self._CMD_SOHR # SOH R 1 STX
         for ch in cmd:
             _cmd.append(ord(ch))
         _cmd += [0x03]

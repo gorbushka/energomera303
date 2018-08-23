@@ -10,11 +10,11 @@ param=sys.argv[3] #'CURRE'
 
 PORT = 4001
 HOST = str(nportip) # '10.137.154.143'
-TIMEOUT = 3
+TIMEOUT = 5
 ADDRESS = str(counter_addr) #'000013'
 PARAM=str(param+'()') #'CURRE()'
 
 
-en = Counter(HOST, PORT, ADDRESS, TIMEOUT, False)
+en = Counter(HOST, PORT, ADDRESS, TIMEOUT, True)
 result = en.cmd_read(PARAM)
 print result
