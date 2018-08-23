@@ -33,7 +33,7 @@ def zabbix_packet(array):
         except Exception, error:
             print 'Error array', error
             pass
-    print packet
+#    print packet
     return packet
 
 def get_param(n_arg,param):
@@ -70,7 +70,7 @@ for addr in list_addresses:
 #       [addr,'CURR[C]',dict_curr['C']],
 #       ]
 
-print oarray
+#print oarray
 pack=zabbix_packet(oarray)
 sender = ZabbixSender(use_config=True)
 sender.send(pack)
