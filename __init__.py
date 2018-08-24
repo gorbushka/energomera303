@@ -67,7 +67,6 @@ class Counter:
 
     def __init__(self, host, port, timeout=5, debug=False):
         self.Z = 5
-        #self.address = list(bytearray(b'%d'%address)) if address else []
         self.port = port
         self.host = host
         self.timeout = timeout
@@ -118,7 +117,7 @@ class Counter:
 
     def getTest(self):
         #              01 52 31 02 49 44 45 4E 54 28 29 03 4D
-        return [0x01, 0x52, 0x31, 0x02,0x49, 0x44, 0x45, 0x4E, 0x54, 0x28, 0x29, 0x03, 0x4D] # ACK 0 Z 6 CR LF чтения фиксированного набора параметров
+        return [0x01, 0x52, 0x31, 0x02,0x49, 0x44, 0x45, 0x4E, 0x54, 0x28, 0x29, 0x03, 0x4D]
 
 
     def close(self):
@@ -214,29 +213,21 @@ class Counter:
 
     # Get value of some counters
     def get(self):
-        #res1 = self.readSocket(self.getCmdReadMode()) # init read mode
-        #self.init()
-        #cmd_close = self.close()
-        #print cmd_close, pretty_hex(cmd_close)
-        #res2 = self.readSocket(self.getCmdQuickReadMode()) # quick read
-        #self.init()
         #res2 = self.readSocket(self.getCmdModReadMode()) # read
         res2 = self.readSocket(self.getCmdWriteMode()) # write
         #res2 = self.readSocket(self.getTest()) # read
         return res2
+
     def get_close(self):
         res = self.readSocket(self.close())
         return res
+
     # Parse value from answer (xx.xx)
     def getValue(self, answer):
         try:
-            #value = map(float, re.findall('\((\d+.\d+)', answer))
-            value = map(str, re.findall('\((-?\d+.\d+)', answer)) #work with positive
-            #value = map(str, re.findall('\((.*)\)', answer))
+            value = map(str, re.findall('\((-?\d+.\d+)', answer)) 
         except:
             value=answer  
-        #value = map(float, re.findall('\((\d+.\d+)', answer))
-        #value=answer
         if len(value) == 1:
             value = value[0]
         return value
@@ -252,6 +243,7 @@ class Counter:
         res = self.getValue(answer)
 #         pprint(res)
         return res
+
     # out off session read
     def cmd_read(self, cmd):
         _cmd =  self._CMD_INIT 
